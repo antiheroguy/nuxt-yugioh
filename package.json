@@ -1,0 +1,27 @@
+{
+  "name": "yu-gi-oh-card-search",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@vuestic/tailwind": "^0.1.5",
+    "axios": "^1.7.9",
+    "nuxt": "^3.15.1",
+    "nuxt-lodash": "^2.5.3",
+    "vue": "latest",
+    "vue-router": "latest"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.14",
+    "@vuestic/nuxt": "^1.0.19",
+    "autoprefixer": "^10.4.15",
+    "postcss": "^8.4.28",
+    "tailwindcss": "^3.3.3"
+  }
+}
