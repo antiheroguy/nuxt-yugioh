@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/bb2c3e2d-f3f0-4748-93ff-6f3e4c8524ba/deploy-status)](https://app.netlify.com/sites/nuxt-yugioh/deploys)
+
 # Nuxt Yu-Gi-Oh!
 
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
