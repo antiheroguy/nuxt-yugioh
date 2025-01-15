@@ -1,7 +1,9 @@
-export type Options = {
+export type Option = {
   text: string;
   value: string;
 };
+
+export type CardType = 'Monster' | 'Spell' | 'Trap'
 
 export type CardSet = {
   set_name: string;
@@ -41,7 +43,7 @@ export type Card = {
   linkmarkers?: string[];
   race: string;
   attribute: string;
-  ygoprodeck_url?: string;
+  ygoprodeck_url: string;
   typeline?: string[];
   card_sets: CardSet[];
   card_images: CardImage[];

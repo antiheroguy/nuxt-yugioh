@@ -9,12 +9,12 @@
       <VaCollapse v-model="isFilterOpen" header="Advanced Filters" icon="filter_alt">
         <div class="flex gap-4 py-2">
           <VaSelect v-model="cardType" label="Category" placeholder="All" clearable :options="CARD_TYPE" />
-          <VaSelect v-model="type" label="Sub-Category" placeholder="All" clearable :options="typeOptions" />
-          <VaSelect v-model="race" label="Type" placeholder="All" clearable :options="raceOptions" />
+          <VaSelect v-model="type" multiple label="Sub-Category" placeholder="All" clearable :options="typeOptions" />
+          <VaSelect v-model="race" multiple label="Type" placeholder="All" clearable :options="raceOptions" />
         </div>
         <div class="flex gap-4 py-2">
-          <VaSelect label="Attribute" v-model="attribute" placeholder="All" clearable :options="attributeOptions"
-            :disabled="!isMonster" />
+          <VaSelect label="Attribute" multiple v-model="attribute" placeholder="All" clearable
+            :options="attributeOptions" :disabled="!isMonster" />
           <VaInput type="number" label="Attack" v-model="attack" :min="0" :max="5000" placeholder="Attack" clearable
             :disabled="!isMonster" />
           <VaInput type="number" label="Defend" v-model="defend" :min="0" :max="5000" placeholder="Defend" clearable
@@ -66,15 +66,17 @@
                 <VaListItemLabel :lines="100">
                   <h2 class="mb-4 text-xl text-white">{{ card.name }}</h2>
                   <div class="flex mb-4">
-                    <template v-for="type, index in card.type">
+                    <template v-for="type, index in card.type" :key="type">
                       <span class="text-gray-200">{{ type }}</span>
                       <VaDivider vertical v-if="index !== card.type.length - 1" />
                     </template>
                   </div>
                 </VaListItemLabel>
-                <VaListItemLabel caption :lines="100" v-html="card.desc" />
+                <VaListItemLabel caption :lines="100">
+                  {{ card.desc }}
+                </VaListItemLabel>
               </VaListItemSection>
-              <VaListItemSection icon v-if="card.data.ygoprodeck_url">
+              <VaListItemSection icon>
                 <VaIcon title="View" name="remove_red_eye" color="white"
                   @click="gotoYGODeck(card.data.ygoprodeck_url)" />
               </VaListItemSection>
@@ -88,13 +90,14 @@
 
 <script setup lang="ts">
 import axios from 'axios'
+import dayjs from 'dayjs'
 import { MONSTER, RACE, TYPE, CARD_TYPE, FORMAT, SORT, ATTRIBUTE, YES_NO_OPTIONS, BANLIST, DATE_REGION } from '~/constants/options'
-import type { Card, CardDetail, Options } from '~/constants/types'
+import type { Card, CardDetail, CardType, Option } from '~/constants/types'
 
 const { init } = useToast()
 const toPascalCase = (str: string) => useStartCase(useToLower(str))
-const makePascalOptions = (data: string[]) => data.map((item) => ({ text: toPascalCase(item), value: item }))
-const makeUpperOptions = (data: string[]) => data.map((item) => ({ text: useUpperCase(item), value: item }))
+const makePascalOptions = (data: string[]): Option[] => data.map((item) => ({ text: toPascalCase(item), value: item }))
+const makeUpperOptions = (data: string[]): Option[] => data.map((item) => ({ text: useUpperCase(item), value: item }))
 
 const limit = 20
 
@@ -102,26 +105,26 @@ const page = ref<number>(1)
 const hasMorePage = ref<boolean>(true)
 const isFilterOpen = ref<boolean>(false)
 
-const cardType = ref(null)
+const cardType = ref<CardType | null>(null)
 const name = ref<string | null>(null)
-const race = ref<Options | null>(null)
-const type = ref<string | null>(null)
+const race = ref<string[]>([])
+const type = ref<string[]>([])
 const archetype = ref(null)
-const attribute = ref<Options | null>(null)
-const attack = ref(null)
-const defend = ref(null)
-const level = ref(undefined)
-const link = ref(undefined)
-const scale = ref(undefined)
-const linkMarker = ref([])
-const cardSet = ref(null)
-const banList = ref(null)
-const sort = ref<Options | null>(null)
-const format = ref<Options | null>(null)
-const staple = ref<Options | null>(null)
-const hasEffect = ref<Options | null>(null)
-const releaseDate = ref(null)
-const dateRegion = ref(null)
+const attribute = ref<Option[]>([])
+const attack = ref<number | null>(null)
+const defend = ref<number | null>(null)
+const level = ref<number | undefined>(undefined)
+const link = ref<number | undefined>(undefined)
+const scale = ref<number | undefined>(undefined)
+const linkMarker = ref<string[]>([])
+const cardSet = ref<Option | null>(null)
+const banList = ref<Option | null>(null)
+const sort = ref<Option | null>(null)
+const format = ref<Option | null>(null)
+const staple = ref<Option | null>(null)
+const hasEffect = ref<Option | null>(null)
+const releaseDate = ref<{ start: Date, end: Date } | null>(null)
+const dateRegion = ref<Option | null>(null)
 
 const cards = ref<CardDetail[]>([])
 const cardSetOptions = ref<string[]>([])
@@ -138,17 +141,17 @@ const raceOptions = computed(() => {
   if (!cardType.value) {
     return []
   }
-  return RACE[cardType.value] || []
+  return RACE[cardType.value as CardType] || []
 })
 
 const typeOptions = computed(() => {
   if (!cardType.value) {
     return []
   }
-  return TYPE[cardType.value] || []
+  return TYPE[cardType.value as CardType] || []
 })
 
-watch(cardType, (value) => {
+watch(cardType, (value: CardType | null) => {
   clearMonsterFilters()
 
   if (!value) {
@@ -157,17 +160,18 @@ watch(cardType, (value) => {
 
   const typeList: string[] = TYPE[value] || []
   if (typeList.length !== 1) {
-    type.value = null
+    type.value = []
     return
   }
 
-  type.value = typeList[0]
+  type.value = [typeList[0]]
 })
 
 const gotoYGODeck = (url: string) => window.open(url, '_blank')
 
 const clearAllFilters = () => {
   name.value = null
+  cardType.value = null
   archetype.value = null
   cardSet.value = null
   banList.value = null
@@ -182,9 +186,9 @@ const clearAllFilters = () => {
 }
 
 const clearMonsterFilters = () => {
-  type.value = null
-  race.value = null
-  attribute.value = null
+  type.value = []
+  race.value = []
+  attribute.value = []
   attack.value = null
   defend.value = null
   level.value = undefined
@@ -220,25 +224,25 @@ const fetchArchetypes = async () => {
 const fetchCards = async () => {
   const params = {
     fname: name.value || null,
-    type: type.value || null,
+    type: type.value.length ? type.value.join(',') : null,
     atk: isNumber(attack.value) ? attack.value : null,
     def: isNumber(defend.value) ? defend.value : null,
     level: level.value || null,
-    race: race.value || null,
-    attribute: attribute.value?.value || null,
+    race: race.value.length ? race.value.join(',') : null,
+    attribute: attribute.value.length ? attribute.value.map((item: Option) => item.value).join(',') : null,
     link: link.value || null,
     linkmarker: linkMarker.value?.join(',') || null,
     scale: scale.value || null,
     cardset: cardSet.value || null,
     archetype: archetype.value || null,
-    banlist: banList.value || null,
+    banlist: banList.value?.value || null,
     sort: sort.value?.value || null,
     format: format.value?.value || null,
-    staple: staple.value?.value || null,
-    has_effect: hasEffect.value?.value || null,
-    startdate: releaseDate.value?.[0] || null,
-    enddate: releaseDate.value?.[0] || null,
-    dateregion: dateRegion.value || null,
+    staple: staple.value?.value ? 'yes' : null,
+    has_effect: hasEffect.value?.value !== undefined ? +hasEffect.value?.value : null,
+    startdate: releaseDate.value?.start ? dayjs(releaseDate.value.start).format('YYYY-MM-DD') : null,
+    enddate: releaseDate.value?.end ? dayjs(releaseDate.value.end).format('YYYY-MM-DD') : null,
+    dateregion: dateRegion.value?.value || null,
     num: limit,
     offset: limit * (page.value - 1)
   }
@@ -246,7 +250,7 @@ const fetchCards = async () => {
   try {
     const { data }: { data: { data: Card[] } } = await axios.get('https://db.ygoprodeck.com/api/v7/cardinfo.php', { params })
     const cardData = data.data.map((card) => {
-      const type = card.atk !== undefined ?
+      const type = isNumber(card.atk) ?
         [
           card.humanReadableCardType,
           card.attribute,
@@ -254,14 +258,14 @@ const fetchCards = async () => {
           card.level ? `Level/Rank: ${card.level}` : null,
           card.scale ? `Scale: ${card.scale}` : null,
           card.linkval ? `Link: ${card.linkval} (${(card.linkmarkers || []).join(', ')})` : null,
-          card.atk ? `ATK: ${card.atk}` : null,
-          card.def ? `DEF: ${card.def}` : null,
+          isNumber(card.atk) ? `ATK: ${card.atk}` : null,
+          isNumber(card.def) ? `DEF: ${card.def}` : null,
         ]
         : [card.humanReadableCardType]
       return {
         image: card.card_images[0].image_url,
         name: card.name,
-        desc: card.desc.replaceAll('\n', '<br>'),
+        desc: card.desc,
         type: type.filter(item => item !== null),
         data: card
       }
@@ -288,6 +292,10 @@ onMounted(() => {
 :deep(.va-list-item__inner) {
   padding: 10px 0;
   border-bottom: 1px solid #34495e;
+}
+
+:deep(.va-list-item-label--caption) {
+  white-space: pre-line;
 }
 
 :deep(.va-collapse__body-wrapper--bordered) {

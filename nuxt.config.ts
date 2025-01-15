@@ -18,7 +18,7 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ['@vuestic/nuxt', 'nuxt-lodash'],
+  modules: ['@vuestic/nuxt', 'nuxt-lodash', 'dayjs-nuxt'],
 
   vuestic: {
     config: {
